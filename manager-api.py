@@ -38,12 +38,12 @@ class PerformanceManagerAgent:
         accuracy_universe = np.arange(0, 101, 1)
 
         # Define funções de pertinência fuzzy para facilidade
-        low_ezness = fuzz.trapmf(accuracy_universe, [0, 0, 30, 60])  # Baixa (dificuldade)
-        medium_ezness = fuzz.trapmf(accuracy_universe, [45, 55, 60, 70])  # Média
+        low_ezness = fuzz.trapmf(accuracy_universe, [0, 0, 25, 60])  # Baixa (dificuldade)
+        # medium_ezness = fuzz.trapmf(accuracy_universe, [45, 55, 60, 70])  # Média
         high_ezness = fuzz.trapmf(accuracy_universe, [60, 90, 100, 100])  # Alta (facilidade)
 
         # Calcula métricas para cada tipo de conteúdo
-        for content_type in ["image", "video", "text"]:
+        for content_type in ["imagem", "video", "texto"]:
             correct = performance[content_type]["correct"]
             incorrect = performance[content_type]["incorrect"]
             total = correct + incorrect
@@ -59,10 +59,10 @@ class PerformanceManagerAgent:
             high_degree = fuzz.interp_membership(accuracy_universe, high_ezness, accuracy_rate)
 
             # Identifica facilidades e dificuldades com base nos graus de pertinência
-            if high_degree >= 0.5:
-                result["strengths"].append({"content_type": content_type, "membership_degree": round(high_degree, 2)})
-            if low_degree >= 0.33:
-                result["weaknesses"].append({"content_type": content_type, "membership_degree": round(low_degree, 2)})
+            if round(high_degree, 2) >= 0.5:
+                result["strengths"].append({"content_type": content_type, "affinity_degree": round(high_degree, 2)})
+            if round(low_degree, 2) >= 0.29:
+                result["weaknesses"].append({"content_type": content_type, "difficulty_degree": round(low_degree, 2)})
                 result["needs_help"] = True
 
             # Acumula para média geral
@@ -89,7 +89,7 @@ class PerformanceManagerAgent:
     def send_report_to_api(self, report):
         # Envia o relatório processado para a API. #
         try:
-            urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
+            urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning) # Ignorar warning SSL
             response = requests.post(f"{self.api_url}", json=report, verify=False)
             print(f"Sent Response:\n{json.dumps(report)}")
             response.raise_for_status()
