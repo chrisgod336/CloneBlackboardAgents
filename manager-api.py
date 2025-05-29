@@ -1,6 +1,9 @@
 from flask import Flask, request, jsonify
 import requests
+from requests.packages import urllib3
 import json
+import numpy as np
+import skfuzzy as fuzz
 
 class PerformanceManagerAgent:
     def __init__(self, api_url):
@@ -31,6 +34,14 @@ class PerformanceManagerAgent:
         total_correct = 0
         total_questions = 0
 
+        # Define universo para taxa de acertos (0 a 100%)
+        accuracy_universe = np.arange(0, 101, 1)
+
+        # Define funções de pertinência fuzzy para facilidade
+        low_ezness = fuzz.trapmf(accuracy_universe, [0, 0, 30, 60])  # Baixa (dificuldade)
+        medium_ezness = fuzz.trapmf(accuracy_universe, [45, 55, 60, 70])  # Média
+        high_ezness = fuzz.trapmf(accuracy_universe, [60, 90, 100, 100])  # Alta (facilidade)
+
         # Calcula métricas para cada tipo de conteúdo
         for content_type in ["image", "video", "text"]:
             correct = performance[content_type]["correct"]
@@ -43,11 +54,15 @@ class PerformanceManagerAgent:
             # Armazena média por tipo de conteúdo
             result["averages_by_content"][content_type] = round(accuracy_rate, 2)
 
-            # Identifica facilidades e dificuldades
-            if accuracy_rate >= 80:
-                result["strengths"].append(content_type)
-            elif accuracy_rate < 50:
-                result["weaknesses"].append(content_type)
+            # Calcula graus de pertinência fuzzy
+            low_degree = fuzz.interp_membership(accuracy_universe, low_ezness, accuracy_rate)
+            high_degree = fuzz.interp_membership(accuracy_universe, high_ezness, accuracy_rate)
+
+            # Identifica facilidades e dificuldades com base nos graus de pertinência
+            if high_degree >= 0.5:
+                result["strengths"].append({"content_type": content_type, "membership_degree": round(high_degree, 2)})
+            if low_degree >= 0.33:
+                result["weaknesses"].append({"content_type": content_type, "membership_degree": round(low_degree, 2)})
                 result["needs_help"] = True
 
             # Acumula para média geral
@@ -74,7 +89,9 @@ class PerformanceManagerAgent:
     def send_report_to_api(self, report):
         # Envia o relatório processado para a API. #
         try:
-            response = requests.post(f"{self.api_url}", json=report)
+            urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
+            response = requests.post(f"{self.api_url}", json=report, verify=False)
+            print(f"Sent Response:\n{json.dumps(report)}")
             response.raise_for_status()
             print("Relatório enviado com sucesso!")
             return True
