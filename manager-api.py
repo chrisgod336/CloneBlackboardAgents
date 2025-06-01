@@ -5,7 +5,7 @@ import json
 import numpy as np
 import skfuzzy as fuzz
 
-class PerformanceManagerAgent:
+class ManagerAgent:
     def __init__(self, api_url):
         self.api_url = api_url
         self.data = None
@@ -20,14 +20,14 @@ class PerformanceManagerAgent:
         if not self.data:
             return None
 
-        performance = self.data["performance"]
+        performance = self.data["dados"]
         result = {
-            "strengths": [],
-            "weaknesses": [],
-            "needs_help": False,
-            "overall_performance": "",
-            "overall_average": 0.0,
-            "averages_by_content": {}
+            "facilidades": [],
+            "dificuldades": [],
+            "ajuda": False,
+            "desempenho": "",
+            "media": 0.0,
+            "media_por_conteudo": {}
         }
 
         # Inicializa variáveis para cálculo da média geral
@@ -44,15 +44,15 @@ class PerformanceManagerAgent:
 
         # Calcula métricas para cada tipo de conteúdo
         for content_type in ["imagem", "video", "texto"]:
-            correct = performance[content_type]["correct"]
-            incorrect = performance[content_type]["incorrect"]
+            correct = performance[content_type]["acertos"]
+            incorrect = performance[content_type]["erros"]
             total = correct + incorrect
 
             # Evita divisão por zero
             accuracy_rate = (correct / total * 100) if total > 0 else 0.0
 
             # Armazena média por tipo de conteúdo
-            result["averages_by_content"][content_type] = round(accuracy_rate, 2)
+            result["media_por_conteudo"][content_type] = round(accuracy_rate, 2)
 
             # Calcula graus de pertinência fuzzy
             low_degree = fuzz.interp_membership(accuracy_universe, low_ezness, accuracy_rate)
@@ -60,29 +60,29 @@ class PerformanceManagerAgent:
 
             # Identifica facilidades e dificuldades com base nos graus de pertinência
             if round(high_degree, 2) >= 0.5:
-                result["strengths"].append({"content_type": content_type, "affinity_degree": round(high_degree, 2)})
+                result["facilidades"].append({"tipo_conteudo": content_type, "grau_facilidade": round(high_degree, 2)})
             if round(low_degree, 2) >= 0.29:
-                result["weaknesses"].append({"content_type": content_type, "difficulty_degree": round(low_degree, 2)})
-                result["needs_help"] = True
+                result["dificuldades"].append({"tipo_conteudo": content_type, "grau_dificuldade": round(low_degree, 2)})
+                result["ajuda"] = True
 
             # Acumula para média geral
             total_correct += correct
             total_questions += total
 
         # Calcula média geral
-        result["overall_average"] = round((total_correct / total_questions * 100), 2) if total_questions > 0 else 0.0
+        result["media"] = round((total_correct / total_questions * 100), 2) if total_questions > 0 else 0.0
 
         # Determina desempenho geral
-        if result["overall_average"] >= 90:
-            result["overall_performance"] = "Muito Avançado"
-        elif result["overall_average"] >= 80:
-            result["overall_performance"] = "Avançado"
-        elif result["overall_average"] >= 70:
-            result["overall_performance"] = "Médio"
-        elif result["overall_average"] >= 50:
-            result["overall_performance"] = "Baixo"
+        if result["media"] >= 90:
+            result["desempenho"] = "Muito Avançado"
+        elif result["media"] >= 80:
+            result["desempenho"] = "Avançado"
+        elif result["media"] >= 70:
+            result["desempenho"] = "Médio"
+        elif result["media"] >= 50:
+            result["desempenho"] = "Baixo"
         else:
-            result["overall_performance"] = "Muito Baixo"
+            result["desempenho"] = "Muito Baixo"
 
         return result
 
@@ -102,18 +102,27 @@ class PerformanceManagerAgent:
 # Configuração do servidor Flask
 app = Flask(__name__)
 
-@app.route('/process_performance', methods=['POST'])
-def process_performance():
+@app.route('/gestor', methods=['POST'])
+def call_manager():
     # Processa requisição POST com dados de desempenho e retorna relatório. #
     try:
         # Obtém os dados do request POST
+        """ Formato:
+        {
+            "dados": {
+                "imagem": {"acertos": 90, "erros": 10},
+                "video": {"acertos": 80, "erros": 20},
+                "texto": {"acertos": 75, "erros": 25}
+            }
+        }
+        """
         data = request.get_json()
-        if not data or "performance" not in data:
+        if not data or "dados" not in data:
             return jsonify({"error": "Dados inválidos no request POST"}), 400
 
         # Inicializa o agente com a URL da API
         api_url = "https://api.exemplo.com"  # Substitua pela URL real da API
-        agent = PerformanceManagerAgent(api_url)
+        agent = ManagerAgent(api_url)
 
         # Define os dados recebidos e processa
         if not agent.set_data(data):
