@@ -9,22 +9,22 @@ import skfuzzy as fuzz
 ############## Tutor ##############
 class TutorAgent:
     """
-    Agente Tutor Simplificado
-    Utiliza lógica fuzzy para determinar qual método de aprendizagem o aluno tem mais facilidade
-    e retorna as partes de conteúdo em formato JSON.
+    agente tutor simplificado
+    utiliza logica fuzzy para determinar qual metodo de aprendizagem o aluno tem mais facilidade
+    e retorna as partes de conteudo em formato JSON.
 
     Matrícula: 2122130042
   
-    Este código implementa uma simplificação da lógica fuzzy.
-    As regras implementadas são:
-    1. Se taxa de acerto em vídeo é alta e as demais são baixas, então preferência é vídeo
-    2. Se taxa de acerto em texto é alta e as demais são baixas, então preferência é texto
-    3. Se taxa de acerto em imagem é alta e as demais são baixas, então preferência é imagem
-    4. Se todas as taxas de acerto são baixas, então preferência é texto
-    5. Se todas as taxas de acerto são altas, então preferência é texto
+    este codigo implementa uma simplificacao da logica fuzzy.
+    as regras implementadas sao:
+    1. se taxa de acerto em video e alta e as demais sao baixas, entao preferencia e video
+    2. se taxa de acerto em texto e alta e as demais sao baixas, entao preferencia e texto
+    3. se taxa de acerto em imagem e alta e as demais sao baixas, entao preferencia e imagem
+    4. se todas as taxas de acerto sao baixas, entao preferencia e texto
+    5. se todas as taxas de acerto sao altas, entao preferencia e texto
 
-    Em vez de usar bibliotecas fuzzy complexas, implementamos diretamente as regras
-    com condições simples baseadas em limites de taxas de acerto.
+    em vez de usar bibliotecas fuzzy complexas, implementamos diretamente as regras
+    com condicoes simples baseadas em limites de taxas de acerto.
     """
 
     def __init__(self):
@@ -71,83 +71,83 @@ class TutorAgent:
 
     def avaliar_preferencia_conteudo(self, taxas_acerto):
         """
-        Avalia a preferência de conteúdo com base nas taxas de acerto.
-        Simplificação da lógica fuzzy para determinar a preferência.
+        avalia a preferencia de conteudo com base nas taxas de acerto.
+        simplificacao da logica fuzzy para determinar a preferencia.
         
-        Args:
-            taxas_acerto: Dicionário com taxas de acerto por método
+        args:
+            taxas_acerto: dicionario com taxas de acerto por metodo
             
-        Returns:
-            str: Método preferido (texto, imagem ou video)
+        returns:
+            str: metodo preferido (texto, imagem ou video)
         """
-        # Definir limites para considerar uma taxa como alta ou baixa
-        limite_alto = 0.6  # 60% de acerto ou mais é considerado alto
-        limite_baixo = 0.4  # Menos de 40% de acerto é considerado baixo
+        # definir limites para considerar uma taxa como alta ou baixa
+        limite_alto = 0.6  # 60% de acerto ou mais e considerado alto
+        limite_baixo = 0.4  # menos de 40% de acerto e considerado baixo
         
-        # Verificar regra 1: Se vídeo é alto e os demais são baixos, então preferência é vídeo
+        # verificar regra 1: se video e alto e os demais sao baixos, entao preferencia e video
         if (taxas_acerto["video"] >= limite_alto and 
             taxas_acerto["texto"] <= limite_baixo and 
             taxas_acerto["imagem"] <= limite_baixo):
             return "video"
         
-        # Verificar regra 2: Se texto é alto e os demais são baixos, então preferência é texto
+        # verificar regra 2: se texto e alto e os demais sao baixos, entao preferencia e texto
         elif (taxas_acerto["texto"] >= limite_alto and 
             taxas_acerto["video"] <= limite_baixo and 
             taxas_acerto["imagem"] <= limite_baixo):
             return "texto"
         
-        # Verificar regra 3: Se imagem é alto e os demais são baixos, então preferência é imagem
+        # verificar regra 3: se imagem e alto e os demais sao baixos, entao preferencia e imagem
         elif (taxas_acerto["imagem"] >= limite_alto and 
             taxas_acerto["texto"] <= limite_baixo and 
             taxas_acerto["video"] <= limite_baixo):
             return "imagem"
         
-        # Verificar regra 4: Se todos são baixos, então preferência é texto
+        # verificar regra 4: se todos sao baixos, entao preferencia e texto
         elif (taxas_acerto["texto"] <= limite_baixo and 
             taxas_acerto["imagem"] <= limite_baixo and 
             taxas_acerto["video"] <= limite_baixo):
             return "texto"
         
-        # Verificar regra 5: Se todos são altos, então preferência é texto
+        # verificar regra 5: se todos sao altos, entao preferencia e texto
         elif (taxas_acerto["texto"] >= limite_alto and 
             taxas_acerto["imagem"] >= limite_alto and 
             taxas_acerto["video"] >= limite_alto):
             return "texto"
         
-        # Caso padrão: retornar o método com maior taxa de acerto
+        # caso padrao: retornar o metodo com maior taxa de acerto
         else:
             return max(taxas_acerto.items(), key=lambda x: x[1])[0]
 
     def distribuir_partes(self, preferencia, taxas_acerto, total_partes=3):
         """
-        Distribui as partes de conteúdo com base na preferência e taxas de acerto.
+        distribui as partes de conteudo com base na preferencia e taxas de acerto.
         
-        Args:
-            preferencia: Método preferido (texto, imagem ou video)
-            taxas_acerto: Dicionário com taxas de acerto por método
-            total_partes: Número total de partes a distribuir
+        args:
+            preferencia: metodo preferido (texto, imagem ou video)
+            taxas_acerto: dicionario com taxas de acerto por metodo
+            total_partes: numero total de partes a distribuir
             
-        Returns:
-            list: Lista com os métodos para cada parte
+        returns:
+            list: lista com os metodos para cada parte
         """
-        # Ordenar métodos por taxa de acerto
+        # ordenar metodos por taxa de acerto
         metodos_ordenados = sorted(taxas_acerto.keys(), key=lambda m: taxas_acerto[m], reverse=True)
         
-        # Inicializar lista de partes
+        # inicializar lista de partes
         partes = []
         
-        # Garantir que o método preferido receba pelo menos uma parte
+        # garantir que o metodo preferido receba pelo menos uma parte
         partes.append(preferencia)
         
-        # Distribuir o restante das partes
+        # distribuir o restante das partes
         partes_restantes = total_partes - 1
         
-        # Método preferido recebe mais uma parte
+        # metodo preferido recebe mais uma parte
         if partes_restantes > 0:
             partes.append(preferencia)
             partes_restantes -= 1
         
-        # Se ainda houver partes, o segundo método com maior taxa recebe uma parte
+        # se ainda houver partes, o segundo metodo com maior taxa recebe uma parte
         if partes_restantes > 0:
             segundo_metodo = metodos_ordenados[1] if metodos_ordenados[0] == preferencia else metodos_ordenados[0]
             partes.append(segundo_metodo)
@@ -160,19 +160,19 @@ class TutorAgent:
             return None
 
         try:
-            # Carregar dados
+            # carregar dados
             dados = self.data
 
-            # Calcular taxas de acerto
+            # calcular taxas de acerto
             taxas_acerto = self.calcular_taxas_acerto(dados)
 
-            # Avaliar preferência de conteúdo usando a lógica fuzzy simplificada
+            # avaliar preferencia de conteudo usando a logica fuzzy simplificada
             preferencia = self.avaliar_preferencia_conteudo(taxas_acerto)
             
-            # Distribuir partes
+            # distribuir partes
             partes = self.distribuir_partes(preferencia, taxas_acerto)
 
-            # Criar dicionário com partes numeradas
+            # criar dicionario com partes numeradas
             partes_numeradas = {}
             for i, parte in enumerate(partes, 1):
                 partes_numeradas[f"parte{i}"] = parte
@@ -187,11 +187,11 @@ class TutorAgent:
 ############## Avaliador ##############
 class EvaluatorAgent:
     """
-    Avaliador de Exercícios
-    Avalia as respostas do aluno, calcula a taxa de acerto e determina se o aluno precisa refazer a aula.
-    Caso necessário, utiliza o Agente Tutor para recomendar métodos de aprendizagem personalizados.
+    avaliador de exercicios
+    avalia as respostas do aluno, calcula a taxa de acerto e determina se o aluno precisa refazer a aula.
+    caso necessario, utiliza o agente tutor para recomendar metodos de aprendizagem personalizados.
 
-    Matrícula: 2122130042
+    matricula: 2122130042
     """
 
     def __init__(self):
@@ -206,49 +206,49 @@ class EvaluatorAgent:
         if not self.data:
             return None
 
-        # Carregar dados
+        # carregar dados
         questoes = self.data["questoes"]            
         if not questoes:
-            return {"erro": "Nenhuma questão encontrada no JSON"}
+            return {"erro": "nenhuma questao encontrada no json"}
         
-        # Contadores para cada tipo de questão
+        # contadores para cada tipo de questao
         contadores = {
             "texto": {"acertos": 0, "total": 0},
             "imagem": {"acertos": 0, "total": 0},
             "video": {"acertos": 0, "total": 0}
         }
         
-        # Avaliar cada questão
+        # avaliar cada questao
         resultados_questoes = []
         for i, questao in enumerate(questoes):
             tipo = questao.get("tipo", "").lower()
             resposta_correta = questao.get("resposta_correta", "")
             resposta_aluno = questao.get("resposta_aluno", "")
             
-            # Verificar se o tipo é válido
+            # verificar se o tipo e valido
             if tipo not in ["texto", "imagem", "video"]:
-                return {"erro": f"Tipo de questão inválido na questão {i+1}: {tipo}"}
+                return {"erro": f"tipo de questao invalido na questao {i+1}: {tipo}"}
             
-            # Verificar se acertou (comparação case-insensitive)
+            # verificar se acertou (comparacao case-insensitive)
             acertou = resposta_correta.lower() == resposta_aluno.lower()
             
-            # Atualizar contadores
+            # atualizar contadores
             contadores[tipo]["total"] += 1
             if acertou:
                 contadores[tipo]["acertos"] += 1
             
-            # Adicionar resultado da questão
+            # adicionar resultado da questao
             resultados_questoes.append({
                 "numero": i + 1,
                 "tipo": tipo,
                 "acertou": acertou
             })
         
-        # Calcular totais gerais
+        # calcular totais gerais
         total_acertos = sum(contador["acertos"] for contador in contadores.values())
         total_questoes = sum(contador["total"] for contador in contadores.values())
         
-        # Calcular taxas de acerto
+        # calcular taxas de acerto
         taxas_acerto = {}
         for tipo, contador in contadores.items():
             if contador["total"] > 0:
@@ -256,18 +256,18 @@ class EvaluatorAgent:
             else:
                 taxas_acerto[tipo] = 0
         
-        # Calcular taxa de acerto geral
+        # calcular taxa de acerto geral
         taxa_acerto_geral = (total_acertos / total_questoes * 100) if total_questoes > 0 else 0
         
-        # Determinar se precisa refazer a aula (taxa de erro > 60%)
-        precisa_refazer = taxa_acerto_geral < 40
+        # determinar se precisa refazer a aula (taxa de acerto < 70%)
+        precisa_refazer = taxa_acerto_geral < 70
         
-        # Preparar dados para o tutor, se necessário
+        # preparar dados para o tutor, se necessario
         dados_tutor = None
         recomendacao_tutor = None
         
         if precisa_refazer:
-            # Preparar dados para o tutor no formato esperado
+            # preparar dados para o tutor no formato esperado
             dados_tutor = {
                 "nu_acertos_texto": contadores["texto"]["acertos"],
                 "nu_erros_texto": contadores["texto"]["total"] - contadores["texto"]["acertos"],
@@ -277,13 +277,13 @@ class EvaluatorAgent:
                 "nu_erros_video": contadores["video"]["total"] - contadores["video"]["acertos"]
             }
             
-            # Chamar o tutor para obter recomendações
+            # chamar o tutor para obter recomendacoes
             agente_tutor = TutorAgent()
             agente_tutor.set_data(dados_tutor)
             resultado_tutor = agente_tutor.calculate_metrics()
             recomendacao_tutor = resultado_tutor
         
-        # Montar resultado final
+        # montar resultado final
         resultado = {
             "acertos": {
                 "texto": contadores["texto"]["acertos"],
@@ -303,7 +303,7 @@ class EvaluatorAgent:
             "resultados_questoes": resultados_questoes
         }
         
-        # Adicionar recomendação do tutor, se necessário
+        # adicionar recomendacao do tutor, se necessario
         if recomendacao_tutor:
             resultado["recomendacao_tutor"] = recomendacao_tutor
         
@@ -325,7 +325,7 @@ class EvaluatorAgent:
                 "aprovado": not resultado["precisa_refazer"]
             }
             
-            # Adicionar partes recomendadas, se necessário refazer
+            # adicionar partes recomendadas, se necessario refazer
             if resultado["precisa_refazer"] and "recomendacao_tutor" in resultado:
                 saida["partes"] = resultado["recomendacao_tutor"]
         
@@ -333,7 +333,7 @@ class EvaluatorAgent:
 
 
 ############## Gestor ##############
-# Autor: Fábio Melo Martins | Matrícula: 2122130014
+# autor: fabio melo martins | matricula: 2122130014
 class ManagerAgent:
     def __init__(self):
         self.data = None
@@ -343,7 +343,7 @@ class ManagerAgent:
         self.data = data
         return True
 
-    def calculate_metrics(self): # Calcula médias, facilidades, dificuldades, necessidade de ajuda e desempenho geral.
+    def calculate_metrics(self): # calcula medias, facilidades, dificuldades, necessidade de ajuda e desempenho geral.
         if not self.data:
             return None
 
@@ -358,70 +358,70 @@ class ManagerAgent:
             "media_por_conteudo": {}
         }
 
-        # Inicializa variáveis para cálculo da média geral
+        # inicializa variaveis para calculo da media geral
         total_correct = 0
         total_questions = 0
 
-        # Define universo para taxa de acertos (0 a 100%)
+        # define universo para taxa de acertos (0 a 100%)
         accuracy_universe = np.arange(0, 101, 1)
 
-        # Define funções de pertinência fuzzy para facilidade
-        low_ezness = fuzz.trapmf(accuracy_universe, [0, 0, 25, 60])  # Baixa (dificuldade)
-        high_ezness = fuzz.trapmf(accuracy_universe, [60, 90, 100, 100])  # Alta (facilidade)
+        # define funcoes de pertinencia fuzzy para facilidade
+        low_ezness = fuzz.trapmf(accuracy_universe, [0, 0, 25, 60])  # baixa (dificuldade)
+        high_ezness = fuzz.trapmf(accuracy_universe, [60, 90, 100, 100])  # alta (facilidade)
 
-        # Calcula métricas para cada tipo de conteúdo
+        # calcula metricas para cada tipo de conteudo
         for content_type in ["imagem", "video", "texto"]:
             correct = performance[content_type]["acertos"]
             incorrect = performance[content_type]["erros"]
             total = correct + incorrect
 
-            # Evita divisão por zero
+            # evita divisao por zero
             accuracy_rate = (correct / total * 100) if total > 0 else 0.0
 
-            # Armazena média por tipo de conteúdo
+            # armazena media por tipo de conteudo
             result["media_por_conteudo"][content_type] = round(accuracy_rate, 2)
 
-            # Calcula graus de pertinência fuzzy
+            # calcula graus de pertinencia fuzzy
             low_degree = fuzz.interp_membership(accuracy_universe, low_ezness, accuracy_rate)
             high_degree = fuzz.interp_membership(accuracy_universe, high_ezness, accuracy_rate)
 
-            # Identifica facilidades e dificuldades com base nos graus de pertinência
+            # identifica facilidades e dificuldades com base nos graus de pertinencia
             if round(high_degree, 2) >= 0.5:
                 result["facilidades"].append({"tipo_conteudo": content_type, "grau_facilidade": round(high_degree, 2)})
             if round(low_degree, 2) >= 0.29:
                 result["dificuldades"].append({"tipo_conteudo": content_type, "grau_dificuldade": round(low_degree, 2)})
                 result["ajuda"] = True
 
-            # Acumula para média geral
+            # acumula para media geral
             total_correct += correct
             total_questions += total
 
-        # Calcula média geral
+        # calcula media geral
         result["media"] = round((total_correct / total_questions * 100), 2) if total_questions > 0 else 0.0
 
-        # Determina desempenho geral
+        # determina desempenho geral
         if result["media"] >= 90:
-            result["desempenho"] = "Muito Avançado"
+            result["desempenho"] = "muito avancado"
         elif result["media"] >= 80:
-            result["desempenho"] = "Avançado"
+            result["desempenho"] = "avancado"
         elif result["media"] >= 70:
-            result["desempenho"] = "Médio"
+            result["desempenho"] = "medio"
         elif result["media"] >= 50:
-            result["desempenho"] = "Baixo"
+            result["desempenho"] = "baixo"
         else:
-            result["desempenho"] = "Muito Baixo"
+            result["desempenho"] = "muito baixo"
 
         return result
 
 
 ############## API que comanda o sistema multiagente ##############
-# Autor: Fábio Melo Martins | Matrícula: 2122130014
+# autor: fabio melo martins | matricula: 2122130014
 
-# Configuração do servidor Flask
+# configuracao do servidor flask
 app = Flask(__name__)
 
 
-### Endpoint de entrada do tutor ###
+### endpoint de entrada do tutor ###
 @app.route('/tutor', methods=['POST'])
 def call_tutor():
     # Processa requisição POST com dados de desempenho e retorna relatório. #
@@ -463,7 +463,7 @@ def call_tutor():
         return jsonify({"error": f"Erro interno: {str(e)}"}), 500
 
 
-### Endpoint de entrada do avaliador ###
+### endpoint de entrada do avaliador ###
 @app.route('/avaliador', methods=['POST'])
 def call_evaluator():
     # Processa requisição POST com dados de desempenho e retorna relatório. #
