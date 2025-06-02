@@ -4,10 +4,12 @@ from requests.packages import urllib3
 import json
 import numpy as np
 import skfuzzy as fuzz
+from flask_cors import CORS
 
 #pip install flask requests numpy scikit-fuzzy
 #pip install scipy
 #pip install packaging
+#pip install flask-cors
 
 ############## Tutor ##############
 class TutorAgent:
@@ -478,7 +480,7 @@ class ManagerAgent:
 
 # configuracao do servidor flask
 app = Flask(__name__)
-
+CORS(app, resources={r"/*": {"origins": "*"}}) 
 
 ### endpoint de entrada do tutor ###
 @app.route('/tutor', methods=['POST'])
