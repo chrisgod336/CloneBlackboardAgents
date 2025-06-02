@@ -5,6 +5,7 @@ import json
 import numpy as np
 import skfuzzy as fuzz
 
+#pip install flask requests numpy scikit-fuzzy
 
 ############## Tutor ##############
 class TutorAgent:
@@ -71,86 +72,136 @@ class TutorAgent:
 
     def avaliar_preferencia_conteudo(self, taxas_acerto):
         """
-        avalia a preferencia de conteudo com base nas taxas de acerto.
-        simplificacao da logica fuzzy para determinar a preferencia.
+        avalia a preferencia de conteudo com base nas taxas de acerto usando logica fuzzy.
+        prioriza os tipos de conteudo em que o aluno tem melhor desempenho.
         
         args:
             taxas_acerto: dicionario com taxas de acerto por metodo
             
         returns:
-            str: metodo preferido (texto, imagem ou video)
+            dict: dicionario com graus de preferencia para cada tipo de conteudo
         """
-        # definir limites para considerar uma taxa como alta ou baixa
-        limite_alto = 0.6  # 60% de acerto ou mais e considerado alto
-        limite_baixo = 0.4  # menos de 40% de acerto e considerado baixo
+        # verificar se o aluno tem historico
+        tem_historico = sum(taxas_acerto.values()) > 0
         
-        # verificar regra 1: se video e alto e os demais sao baixos, entao preferencia e video
-        if (taxas_acerto["video"] >= limite_alto and 
-            taxas_acerto["texto"] <= limite_baixo and 
-            taxas_acerto["imagem"] <= limite_baixo):
-            return "video"
+        # se nao tem historico, retornar distribuicao equilibrada
+        if not tem_historico:
+            return {"texto": 0.33, "imagem": 0.33, "video": 0.33}
         
-        # verificar regra 2: se texto e alto e os demais sao baixos, entao preferencia e texto
-        elif (taxas_acerto["texto"] >= limite_alto and 
-            taxas_acerto["video"] <= limite_baixo and 
-            taxas_acerto["imagem"] <= limite_baixo):
-            return "texto"
+        # criar universo para taxas de acerto (0 a 1)
+        taxa_universe = np.linspace(0, 1, 100)
         
-        # verificar regra 3: se imagem e alto e os demais sao baixos, entao preferencia e imagem
-        elif (taxas_acerto["imagem"] >= limite_alto and 
-            taxas_acerto["texto"] <= limite_baixo and 
-            taxas_acerto["video"] <= limite_baixo):
-            return "imagem"
+        # definir funcoes de pertinencia fuzzy
+        baixo = fuzz.trapmf(taxa_universe, [0, 0, 0.3, 0.5])
+        medio = fuzz.trimf(taxa_universe, [0.3, 0.5, 0.7])
+        alto = fuzz.trapmf(taxa_universe, [0.5, 0.7, 1.0, 1.0])
         
-        # verificar regra 4: se todos sao baixos, entao preferencia e texto
-        elif (taxas_acerto["texto"] <= limite_baixo and 
-            taxas_acerto["imagem"] <= limite_baixo and 
-            taxas_acerto["video"] <= limite_baixo):
-            return "texto"
+        # calcular graus de pertinencia para cada tipo de conteudo
+        graus_pertinencia = {}
+        for tipo, taxa in taxas_acerto.items():
+            # calcular pertinencia para cada conjunto fuzzy
+            grau_baixo = fuzz.interp_membership(taxa_universe, baixo, taxa)
+            grau_medio = fuzz.interp_membership(taxa_universe, medio, taxa)
+            grau_alto = fuzz.interp_membership(taxa_universe, alto, taxa)
+            
+            # calcular preferencia baseada nos graus de pertinencia
+            # quanto MAIOR a taxa de acerto, maior a preferencia (priorizar o que o aluno é bom)
+            preferencia = (0.0 * grau_baixo + 0.5 * grau_medio + 1.0 * grau_alto)
+            
+            # se a taxa for zero (nunca acertou), dar baixa preferencia
+            if taxa == 0:
+                preferencia = 0.0
+            
+            graus_pertinencia[tipo] = preferencia
         
-        # verificar regra 5: se todos sao altos, entao preferencia e texto
-        elif (taxas_acerto["texto"] >= limite_alto and 
-            taxas_acerto["imagem"] >= limite_alto and 
-            taxas_acerto["video"] >= limite_alto):
-            return "texto"
-        
-        # caso padrao: retornar o metodo com maior taxa de acerto
+        # normalizar os graus para somarem 1
+        soma = sum(graus_pertinencia.values())
+        if soma > 0:
+            for tipo in graus_pertinencia:
+                graus_pertinencia[tipo] /= soma
         else:
-            return max(taxas_acerto.items(), key=lambda x: x[1])[0]
+            # se todas as taxas forem zero, distribuir igualmente
+            for tipo in graus_pertinencia:
+                graus_pertinencia[tipo] = 1.0 / len(graus_pertinencia)
+        
+        return graus_pertinencia
 
-    def distribuir_partes(self, preferencia, taxas_acerto, total_partes=3):
+    def distribuir_partes(self, preferencias_fuzzy, taxas_acerto, total_partes=3):
         """
-        distribui as partes de conteudo com base na preferencia e taxas de acerto.
+        distribui as partes de conteudo com base nas preferencias fuzzy.
+        prioriza os tipos de conteudo em que o aluno tem melhor desempenho.
         
         args:
-            preferencia: metodo preferido (texto, imagem ou video)
+            preferencias_fuzzy: dicionario com graus de preferencia para cada tipo de conteudo
             taxas_acerto: dicionario com taxas de acerto por metodo
             total_partes: numero total de partes a distribuir
             
         returns:
             list: lista com os metodos para cada parte
         """
-        # ordenar metodos por taxa de acerto
-        metodos_ordenados = sorted(taxas_acerto.keys(), key=lambda m: taxas_acerto[m], reverse=True)
+        # verificar se o aluno tem historico
+        tem_historico = sum(taxas_acerto.values()) > 0
+        
+        # se nao tem historico, retornar um de cada tipo
+        if not tem_historico:
+            # garantir que temos pelo menos um de cada tipo
+            if total_partes >= 3:
+                return ["texto", "imagem", "video"]
+            elif total_partes == 2:
+                return ["texto", "imagem"]
+            else:
+                return ["texto"]
+        
+        # ordenar metodos por preferencia fuzzy (maior preferencia primeiro)
+        metodos_ordenados = sorted(preferencias_fuzzy.keys(), 
+                                 key=lambda m: preferencias_fuzzy[m], 
+                                 reverse=True)
         
         # inicializar lista de partes
         partes = []
         
-        # garantir que o metodo preferido receba pelo menos uma parte
-        partes.append(preferencia)
+        # verificar se algum método tem preferência zero (nunca acertou)
+        metodos_com_preferencia = [m for m in metodos_ordenados if preferencias_fuzzy[m] > 0]
         
-        # distribuir o restante das partes
-        partes_restantes = total_partes - 1
+        # se não houver métodos com preferência, usar distribuição padrão
+        if not metodos_com_preferencia:
+            if total_partes >= 3:
+                return ["texto", "imagem", "video"]
+            elif total_partes == 2:
+                return ["texto", "imagem"]
+            else:
+                return ["texto"]
         
-        # metodo preferido recebe mais uma parte
-        if partes_restantes > 0:
-            partes.append(preferencia)
-            partes_restantes -= 1
+        # filtrar apenas métodos com preferência > 0
+        metodos_ordenados = metodos_com_preferencia
         
-        # se ainda houver partes, o segundo metodo com maior taxa recebe uma parte
-        if partes_restantes > 0:
-            segundo_metodo = metodos_ordenados[1] if metodos_ordenados[0] == preferencia else metodos_ordenados[0]
-            partes.append(segundo_metodo)
+        # distribuir partes com base nas preferências
+        # se só tiver um método com preferência, todas as partes serão desse método
+        if len(metodos_ordenados) == 1:
+            metodo_unico = metodos_ordenados[0]
+            return [metodo_unico] * total_partes
+        
+        # calcular quantas partes cada método deve receber com base na preferência
+        total_preferencia = sum(preferencias_fuzzy[m] for m in metodos_ordenados)
+        partes_por_metodo = {}
+        partes_restantes = total_partes
+        
+        for metodo in metodos_ordenados[:-1]:  # processar todos exceto o último
+            if total_preferencia > 0:
+                num_partes = round(preferencias_fuzzy[metodo] / total_preferencia * total_partes)
+                num_partes = min(num_partes, partes_restantes)  # não exceder o total de partes
+            else:
+                num_partes = 0
+            
+            partes_por_metodo[metodo] = num_partes
+            partes_restantes -= num_partes
+        
+        # o último método recebe as partes restantes
+        partes_por_metodo[metodos_ordenados[-1]] = partes_restantes
+        
+        # montar a lista final de partes
+        for metodo, num_partes in partes_por_metodo.items():
+            partes.extend([metodo] * num_partes)
         
         return partes
 
@@ -166,19 +217,26 @@ class TutorAgent:
             # calcular taxas de acerto
             taxas_acerto = self.calcular_taxas_acerto(dados)
 
-            # avaliar preferencia de conteudo usando a logica fuzzy simplificada
-            preferencia = self.avaliar_preferencia_conteudo(taxas_acerto)
+            # avaliar preferencia de conteudo usando a logica fuzzy real
+            preferencias_fuzzy = self.avaliar_preferencia_conteudo(taxas_acerto)
             
-            # distribuir partes
-            partes = self.distribuir_partes(preferencia, taxas_acerto)
+            # distribuir partes com base nas preferencias fuzzy
+            partes = self.distribuir_partes(preferencias_fuzzy, taxas_acerto)
 
             # criar dicionario com partes numeradas
             partes_numeradas = {}
             for i, parte in enumerate(partes, 1):
                 partes_numeradas[f"parte{i}"] = parte
             
+            # adicionar informacoes de diagnostico para depuracao
+            diagnostico = {
+                "taxas_acerto": taxas_acerto,
+                "preferencias_fuzzy": preferencias_fuzzy
+            }
+            
             return {
-                "partes": partes_numeradas
+                "partes": partes_numeradas,
+                "diagnostico": diagnostico
             }
         except Exception as e:
             return {"erro": str(e)}
@@ -331,7 +389,6 @@ class EvaluatorAgent:
         
         return saida
 
-
 ############## Gestor ##############
 # autor: fabio melo martins | matricula: 2122130014
 class ManagerAgent:
@@ -453,7 +510,7 @@ def call_tutor():
         if not report:
             return jsonify({"error": "Falha ao calcular métricas"}), 500
         if "erro" in report:
-            return jsonify({"error": f"Falha ao calcular métricas: {report["erro"]}"}), 500
+            return jsonify({"error": f"Falha ao calcular métricas: {report['erro']}"}), 500
 
         # Retorna o relatório como resposta ao cliente
         return jsonify(report), 200
@@ -502,7 +559,7 @@ def call_evaluator():
         if not report:
             return jsonify({"error": "Falha ao calcular métricas"}), 500
         if "erro" in report:
-            return jsonify({"error": f"Falha ao calcular métricas: {report["erro"]}"}), 500
+            return jsonify({"error": f"Falha ao calcular métricas: {report['erro']}"}), 500
 
         # Retorna o relatório como resposta ao cliente
         return jsonify(report), 200
