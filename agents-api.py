@@ -462,9 +462,9 @@ class ManagerAgent:
 
         # determina desempenho geral
         if result["media"] >= 90:
-            result["desempenho"] = "muito avancado"
+            result["desempenho"] = "muito alto"
         elif result["media"] >= 80:
-            result["desempenho"] = "avancado"
+            result["desempenho"] = "alto"
         elif result["media"] >= 70:
             result["desempenho"] = "medio"
         elif result["media"] >= 50:
