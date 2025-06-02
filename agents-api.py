@@ -6,6 +6,8 @@ import numpy as np
 import skfuzzy as fuzz
 
 #pip install flask requests numpy scikit-fuzzy
+#pip install scipy
+#pip install packaging
 
 ############## Tutor ##############
 class TutorAgent:
